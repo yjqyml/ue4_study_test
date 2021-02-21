@@ -6,15 +6,11 @@
 		},
 		{
 			"name": "UE4",
-			"path": "D:\\UE_4.26"
+			"path": "H:\\ue4\\UE_4.26"
 		}
 	],
 	"settings": {
-		"typescript.tsc.autoDetect": "off",
-		"files.associations": {
-			"xiosbase": "cpp",
-			"ios": "cpp"
-		}
+		"typescript.tsc.autoDetect": "off"
 	},
 	"extensions": {
 		"recommendations": [
