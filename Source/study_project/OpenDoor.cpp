@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Actor.h"
 
+#define OUT
 // Sets default values for this component's properties
 UOpenDoor::UOpenDoor()
 {
@@ -29,18 +30,33 @@ void UOpenDoor::BeginPlay()
 	InitaialYaw = GetOwner()->GetActorRotation().Yaw;
 	CurrentYaw = InitaialYaw;
 	OpenAngle += InitaialYaw ;
-
-	ActorThatOpen = GetWorld()->GetFirstPlayerController()->GetPawn();
+	FindpressurePlate();
+	
+	FindAudioComponent();
 }
-
-
+void UOpenDoor::FindpressurePlate()
+{
+	if(!PressurePlate)
+	{
+		UE_LOG(LogTemp,Error,TEXT("%s has the open door component on it,bu no pressureplate set!"),*GetOwner()->GetName());
+	}
+}
+void UOpenDoor::FindAudioComponent()
+{
+	AudioComponent = GetOwner()->FindComponentByClass<UAudioComponent>();
+	if( !AudioComponent)
+	{
+		UE_LOG(LogTemp,Warning,TEXT("audiocomponent not found %s"),*GetOwner()->GetName());
+	}
+}
 // Called every frame
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
-	if( PressurePlate && PressurePlate->IsOverlappingActor(ActorThatOpen))
+	//if( PressurePlate && PressurePlate->IsOverlappingActor(ActorThatOpen))
+	if( TotalMassOfActors() > MassToOpenDoors)
 	{
 		OpenDoor(DeltaTime);
 		DoorOpenLast = GetWorld()->GetTimeSeconds();
@@ -60,6 +76,14 @@ void UOpenDoor::OpenDoor(float DeltaTime)
 	FRotator DoorRotation = GetOwner()->GetActorRotation();
 	DoorRotation.Yaw = CurrentYaw;
 	GetOwner()->SetActorRotation(DoorRotation);
+
+	CloseDoorSound = false;
+	if( !AudioComponent) {return;}
+	if( !OpenDoorSound)
+	{
+		AudioComponent->Play();
+		OpenDoorSound = true;
+	}
 }
 
 void UOpenDoor::CloseDoor(float DeltaTime)
@@ -68,5 +92,27 @@ void UOpenDoor::CloseDoor(float DeltaTime)
 	FRotator DoorRotation = GetOwner()->GetActorRotation();
 	DoorRotation.Yaw = CurrentYaw;
 	GetOwner()->SetActorRotation(DoorRotation);
+
+	OpenDoorSound = false;
+	if( !AudioComponent) {return;}
+	if( !CloseDoorSound)
+	{
+		AudioComponent->Play();
+		CloseDoorSound = true;
+	}
+
 }
 
+float UOpenDoor::TotalMassOfActors() const
+{
+	float TotalMass = 0.f;
+	//find all overlapping actors
+	TArray<AActor*> OverlappingActors;
+	PressurePlate->GetOverlappingActors(OUT OverlappingActors);
+
+	for( AActor* Actor : OverlappingActors)
+	{
+		TotalMass += Actor->FindComponentByClass<UPrimitiveComponent>()->GetMass();
+	}
+	return TotalMass;
+}
